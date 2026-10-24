@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash In Cash Out & Bank In Bank Out</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Visual Reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        cashin: '#10B981',
+                        cashout: '#EF4444',
+                        bankin: '#0EA5E9',
+                        bankout: '#8B5CF6'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Custom scrollbar for clean visual appearance */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Dedicated A4 Print Formatting Rules */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .page-break {
+                page-break-after: always;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            th, td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 6px 10px !important;
+            }
+            th {
+                background-color: #f1f5f9 !important;
+                color: #0f172a !important;
+            }
+        }
+
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand & Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('home')">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <span id="navCompanyName" class="font-bold text-lg tracking-wide block leading-tight">Cash In Cash Out & Bank In Bank Out</span>
+                        <span class="text-xs text-slate-400">Daily Flow Ledger</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex space-x-1">
+                    <button id="tab-btn-home" onclick="switchTab('home')" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-slate-800 text-white">
+                        <i class="fa-solid fa-house text-emerald-400"></i>
+                        <span>Home</span>
+                    </button>
+                    <button id="tab-btn-entry" onclick="switchTab('entry')" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-pen-to-square text-blue-400"></i>
+                        <span>Data Entry</span>
+                    </button>
+                    <button id="tab-btn-report" onclick="switchTab('report')" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-amber-400"></i>
+                        <span>Reports</span>
+                    </button>
+                    <button id="tab-btn-settings" onclick="switchTab('settings')" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-gear text-purple-400"></i>
+                        <span>Settings</span>
+                    </button>
+                </nav>
+
+                <!-- Quick Action Button -->
+                <div class="hidden sm:flex items-center space-x-3">
+                    <button onclick="switchTab('entry')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Entry</span>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="text-slate-300 hover:text-white focus:outline-none p-2">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-slate-800 px-4 pt-2 pb-4 space-y-2 border-t border-slate-700">
+            <button onclick="switchTab('home')" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-slate-900 flex items-center space-x-3">
+                <i class="fa-solid fa-house text-emerald-400 w-5"></i><span>Home</span>
+            </button>
+            <button onclick="switchTab('entry')" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:bg-slate-700 flex items-center space-x-3">
+                <i class="fa-solid fa-pen-to-square text-blue-400 w-5"></i><span>Data Entry</span>
+            </button>
+            <button onclick="switchTab('report')" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:bg-slate-700 flex items-center space-x-3">
+                <i class="fa-solid fa-chart-line text-amber-400 w-5"></i><span>Reports</span>
+            </button>
+            <button onclick="switchTab('settings')" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:bg-slate-700 flex items-center space-x-3">
+                <i class="fa-solid fa-gear text-purple-400 w-5"></i><span>Settings</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= PAGE 1: HOME PAGE ================= -->
+        <section id="view-home" class="space-y-6">
+            <!-- Company Overview Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none flex items-center pr-10">
+                    <i class="fa-solid fa-building-columns text-9xl text-white"></i>
+                </div>
+                
+                <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div class="space-y-3 max-w-3xl">
+                        <div class="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Verified Company Dashboard</span>
+                        </div>
+                        <h1 id="homeCompanyName" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Company Name</h1>
+                        <p id="homeCompanyTagline" class="text-slate-300 text-sm sm:text-base">Managing Cash & Bank Operations Efficiently</p>
+                        
+                        <!-- Company Contact Details Grid -->
+                        <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs text-slate-300 border-t border-slate-700/60 mt-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-location-dot text-slate-400 w-4"></i>
+                                <span id="homeCompanyAddress" class="truncate">Address Not Set</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-phone text-slate-400 w-4"></i>
+                                <span id="homeCompanyPhone">Phone Not Set</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-envelope text-slate-400 w-4"></i>
+                                <span id="homeCompanyEmail" class="truncate">Email Not Set</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-receipt text-slate-400 w-4"></i>
+                                <span id="homeCompanyTax">Tax/Reg ID: --</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-coins text-slate-400 w-4"></i>
+                                <span>Currency: <strong id="homeCompanyCurrency" class="text-emerald-400">OMR</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 min-w-max">
+                        <button onclick="switchTab('entry')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-3 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-sm">
+                            <i class="fa-solid fa-plus-circle text-base"></i>
+                            <span>Add New Entry</span>
+                        </button>
+                        <button onclick="switchTab('settings')" class="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-3 rounded-xl border border-slate-700 transition flex items-center justify-center space-x-2 text-sm">
+                            <i class="fa-solid fa-pen"></i>
+                            <span>Edit Company</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Financial Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- Cash Account Summary Card -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition relative overflow-hidden">
+                    <div class="border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Cash Account</span>
+                        <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5 text-xs">
+                        <div class="flex justify-between text-slate-500">
+                            <span>Opening Cash:</span>
+                            <span id="cardOpeningCash" class="font-semibold text-slate-700">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-emerald-600 font-medium">
+                            <span>Total Cash In (+):</span>
+                            <span id="cardCashIn">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-rose-600 font-medium">
+                            <span>Total Cash Out (-):</span>
+                            <span id="cardCashOut">OMR 0.000</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex justify-between items-center font-bold text-slate-900">
+                            <span>Closing Cash Balance:</span>
+                            <span id="cardNetCash" class="text-base text-emerald-700">OMR 0.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash In Overview -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Cash Received</span>
+                        <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-down text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="cardCashInMain" class="text-2xl font-bold text-slate-900">OMR 0.000</div>
+                        <p class="text-xs text-slate-500 mt-1">Physical cash inflows</p>
+                    </div>
+                </div>
+
+                <!-- Bank Account Summary Card -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition relative overflow-hidden">
+                    <div class="border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-700">Bank Account</span>
+                        <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-building-columns"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5 text-xs">
+                        <div class="flex justify-between text-slate-500">
+                            <span>Opening Bank:</span>
+                            <span id="cardOpeningBank" class="font-semibold text-slate-700">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-sky-600 font-medium">
+                            <span>Received Bank (+):</span>
+                            <span id="cardBankIn">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-purple-600 font-medium">
+                            <span>Bank Out (-):</span>
+                            <span id="cardBankOut">OMR 0.000</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex justify-between items-center font-bold text-slate-900">
+                            <span>Closing Bank Balance:</span>
+                            <span id="cardNetBank" class="text-base text-sky-700">OMR 0.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Received Bank Overview -->
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Bank Inflows</span>
+                        <div class="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                            <i class="fa-solid fa-building-columns text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="cardBankInMain" class="text-2xl font-bold text-slate-900">OMR 0.000</div>
+                        <p class="text-xs text-slate-500 mt-1">Bank deposits & transfers</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Net Closing Balance Summary Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-6 shadow-md flex items-center justify-between">
+                <div>
+                    <span class="text-xs uppercase font-medium tracking-wider text-indigo-200">Total Closing Liquidity (Cash + Bank)</span>
+                    <div id="cardGrandClosing" class="text-3xl font-extrabold mt-1 text-emerald-400">OMR 0.000</div>
+                    <p class="text-xs text-slate-300 mt-1">(Combined Cash Closing Balance + Bank Closing Balance)</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-2xl">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+            </div>
+
+            <!-- Recent Transactions Preview -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Recent Entries</h3>
+                        <p class="text-xs text-slate-500">Latest recorded financial activities</p>
+                    </div>
+                    <button onclick="switchTab('report')" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center space-x-1">
+                        <span>View All Reports</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Type</th>
+                                <th class="px-4 py-3">Category</th>
+                                <th class="px-4 py-3 text-right">Amount</th>
+                                <th class="px-4 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="homeRecentTableBody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 2: DATA ENTRY PAGE ================= -->
+        <section id="view-entry" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Data Entry Console</h1>
+                    <p class="text-sm text-slate-500">Record cash in, cash out, received bank, and bank out transactions</p>
+                </div>
+                <div class="flex items-center space-x-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+                    <i class="fa-solid fa-calendar-day text-emerald-600"></i>
+                    <label for="entryDatePicker" class="text-xs font-semibold text-slate-600">Entry Date:</label>
+                    <input type="date" id="entryDatePicker" class="text-sm font-bold text-slate-800 border-none focus:ring-0 p-0 cursor-pointer" onchange="onEntryDateChange()">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Transaction Form Container (Left Column) -->
+                <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                            <i class="fa-solid fa-plus-circle text-emerald-600"></i>
+                            <span id="formTitle">New Ledger Transaction</span>
+                        </h2>
+                        <span id="editingBadge" class="hidden px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Editing Entry</span>
+                    </div>
+
+                    <form id="entryForm" onsubmit="handleSaveEntry(event)" class="space-y-4">
+                        <input type="hidden" id="entryId">
+
+                        <!-- Entry Type Selector Tabs -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Select Transaction Type *</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="entryType" value="cash_in" class="peer hidden" checked onchange="updateFormFields()">
+                                    <div class="p-3 text-center rounded-lg border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-700 font-semibold text-xs transition flex flex-col items-center gap-1">
+                                        <i class="fa-solid fa-circle-arrow-down text-lg text-emerald-600"></i>
+                                        <span>Cash In</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="entryType" value="cash_out" class="peer hidden" onchange="updateFormFields()">
+                                    <div class="p-3 text-center rounded-lg border-2 border-slate-200 peer-checked:border-rose-500 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-700 font-semibold text-xs transition flex flex-col items-center gap-1">
+                                        <i class="fa-solid fa-circle-arrow-up text-lg text-rose-600"></i>
+                                        <span>Cash Out</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="entryType" value="bank_in" class="peer hidden" onchange="updateFormFields()">
+                                    <div class="p-3 text-center rounded-lg border-2 border-slate-200 peer-checked:border-sky-500 peer-checked:bg-sky-50 text-slate-600 peer-checked:text-sky-700 font-semibold text-xs transition flex flex-col items-center gap-1">
+                                        <i class="fa-solid fa-building-columns text-lg text-sky-600"></i>
+                                        <span>Received Bank</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="entryType" value="bank_out" class="peer hidden" onchange="updateFormFields()">
+                                    <div class="p-3 text-center rounded-lg border-2 border-slate-200 peer-checked:border-purple-500 peer-checked:bg-purple-50 text-slate-600 peer-checked:text-purple-700 font-semibold text-xs transition flex flex-col items-center gap-1">
+                                        <i class="fa-solid fa-money-bill-transfer text-lg text-purple-600"></i>
+                                        <span>Bank Out</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Amount & Category Row -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Amount (<span class="currencySymbol">OMR</span>) *</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-bold currencySymbol">OMR</div>
+                                    <input type="number" step="0.001" min="0.001" id="entryAmount" required class="w-full pl-12 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 font-semibold" placeholder="0.000">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-xs font-semibold text-slate-600 uppercase">Category *</label>
+                                    <button type="button" onclick="openQuickAddCategoryModal()" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center space-x-1">
+                                        <i class="fa-solid fa-plus text-[10px]"></i>
+                                        <span>Add New</span>
+                                    </button>
+                                </div>
+                                <select id="entryCategory" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-800 bg-white">
+                                    <!-- Populated dynamically based on type -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="flex items-center space-x-3 pt-2">
+                            <button type="submit" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg shadow transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-save"></i>
+                                <span id="btnSaveText">Save Transaction</span>
+                            </button>
+                            <button type="button" onclick="resetEntryForm()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-4 py-2.5 rounded-lg transition">
+                                Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Daily Summary & Selected Date Transactions (Right Column) -->
+                <div class="lg:col-span-5 space-y-5">
+                    <!-- Daily Summary Card -->
+                    <div class="bg-slate-900 text-white rounded-xl p-5 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="font-bold text-sm tracking-wide text-slate-200 uppercase flex items-center space-x-2">
+                                <i class="fa-solid fa-calculator text-emerald-400"></i>
+                                <span>Summary of the Day</span>
+                            </h3>
+                            <span id="dailySummaryDateDisplay" class="text-xs bg-slate-800 text-emerald-400 px-2.5 py-1 rounded-md font-mono">2026-10-19</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                                <div class="text-xs text-slate-400">Cash In</div>
+                                <div id="dayCashIn" class="text-lg font-bold text-emerald-400">OMR 0.000</div>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                                <div class="text-xs text-slate-400">Cash Out</div>
+                                <div id="dayCashOut" class="text-lg font-bold text-rose-400">OMR 0.000</div>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                                <div class="text-xs text-slate-400">Received Bank</div>
+                                <div id="dayBankIn" class="text-lg font-bold text-sky-400">OMR 0.000</div>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                                <div class="text-xs text-slate-400">Bank Out</div>
+                                <div id="dayBankOut" class="text-lg font-bold text-purple-400">OMR 0.000</div>
+                            </div>
+                        </div>
+
+                        <!-- Daily Opening & Closing Balances -->
+                        <div class="pt-3 border-t border-slate-800 space-y-2 text-xs">
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Start of Day Cash Opening:</span>
+                                <span id="dayOpeningCash" class="font-semibold text-emerald-300">OMR 0.000</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>End of Day Cash Closing:</span>
+                                <span id="dayClosingCash" class="font-bold text-emerald-400">OMR 0.000</span>
+                            </div>
+                            <div class="border-t border-slate-800/60 pt-2 flex justify-between items-center text-slate-300">
+                                <span>Start of Day Bank Opening:</span>
+                                <span id="dayOpeningBank" class="font-semibold text-sky-300">OMR 0.000</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>End of Day Bank Closing:</span>
+                                <span id="dayClosingBank" class="font-bold text-sky-400">OMR 0.000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Day Transactions Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-800 text-sm">Today's Transactions</h4>
+                            <span id="dayEntryCount" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">0 items</span>
+                        </div>
+
+                        <div id="dayEntriesList" class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 3: REPORT PAGE ================= -->
+        <section id="view-report" class="hidden space-y-6">
+            <!-- Filter Bar & Control Banner -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 no-print">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Financial Reports Console</h1>
+                        <p class="text-sm text-slate-500">Generate Date-Wise, Month-Wise, and Year-Wise summary statements</p>
+                    </div>
+
+                    <!-- Print Button -->
+                    <button onclick="triggerA4Print()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-print text-emerald-400"></i>
+                        <span>Print A4 Report</span>
+                    </button>
+                </div>
+
+                <!-- Filters Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Report Mode *</label>
+                        <select id="reportMode" onchange="onReportModeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white font-medium">
+                            <option value="date" selected>Date-Wise Report</option>
+                            <option value="month">Month-Wise Report</option>
+                            <option value="year">Year-Wise Report</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Filter Transaction Type</label>
+                        <select id="reportTypeFilter" onchange="generateReport()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white font-medium">
+                            <option value="all">All Types (Cash & Bank)</option>
+                            <option value="cash_in">Cash In Only</option>
+                            <option value="cash_out">Cash Out Only</option>
+                            <option value="bank_in">Received Bank Only</option>
+                            <option value="bank_out">Bank Out Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Date-Wise Inputs -->
+                    <div id="filterContainerDate" class="sm:col-span-2 grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Start Date</label>
+                            <input type="date" id="reportStartDate" onchange="generateReport()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">End Date</label>
+                            <input type="date" id="reportEndDate" onchange="generateReport()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800">
+                        </div>
+                    </div>
+
+                    <!-- Month-Wise Input -->
+                    <div id="filterContainerMonth" class="hidden sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Select Month</label>
+                        <input type="month" id="reportMonthPicker" onchange="generateReport()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800">
+                    </div>
+
+                    <!-- Year-Wise Input -->
+                    <div id="filterContainerYear" class="hidden sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Select Year</label>
+                        <select id="reportYearPicker" onchange="generateReport()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 bg-white">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Bar Chart Container -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm no-print space-y-3">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Financial Overview Chart</h3>
+                <div class="h-64 relative">
+                    <canvas id="reportChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Printable Report Document Container (A4 Printable Area) -->
+            <div id="printableReportArea" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-10 print-container">
+                
+                <!-- Print Header (Company Name & Details) -->
+                <div class="border-b border-slate-300 pb-5 mb-6 flex justify-between items-start">
+                    <div class="space-y-1">
+                        <h2 id="printCompName" class="text-2xl font-bold text-slate-900 tracking-tight">Company Name</h2>
+                        <p id="printCompTagline" class="text-xs text-slate-600">Company Tagline / Subtitle</p>
+                        <p id="printCompAddr" class="text-xs text-slate-500">Address Line</p>
+                        <p id="printCompContact" class="text-xs text-slate-500">Phone & Email</p>
+                        <p id="printCompTax" class="text-xs font-semibold text-slate-700">Tax / Reg ID: --</p>
+                    </div>
+
+                    <div class="text-right space-y-1">
+                        <span class="inline-block px-3 py-1 bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded">Statement</span>
+                        <h3 id="printReportTitle" class="text-lg font-extrabold text-slate-800 mt-2">Date-Wise Ledger Report</h3>
+                        <p id="printReportPeriod" class="text-xs text-slate-600 font-medium">Period: 2026-10-01 to 2026-10-19</p>
+                        <p id="printGeneratedDate" class="text-[10px] text-slate-400">Generated on: Oct 19, 2026</p>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Account Opening & Closing Summary Grid in Report -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Cash Account Flow Box -->
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 text-xs space-y-2">
+                        <div class="font-bold text-slate-900 uppercase border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                            <span class="flex items-center space-x-1.5">
+                                <i class="fa-solid fa-money-bill-wave text-emerald-600"></i>
+                                <span>Cash Account Summary</span>
+                            </span>
+                            <span class="text-[10px] font-normal text-slate-500">Period Statement</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Period Opening Cash Balance:</span>
+                            <span id="printOpeningCash" class="font-semibold text-slate-800">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-emerald-700">
+                            <span>Total Cash Received In (+):</span>
+                            <span id="printTotalCashIn" class="font-bold">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-rose-700">
+                            <span>Total Cash Out Paid (-):</span>
+                            <span id="printTotalCashOut" class="font-bold">OMR 0.000</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-300 flex justify-between items-center font-extrabold text-slate-900 text-sm">
+                            <span>Period Closing Cash Balance:</span>
+                            <span id="printClosingCash" class="text-emerald-700">OMR 0.000</span>
+                        </div>
+                    </div>
+
+                    <!-- Bank Account Flow Box -->
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 text-xs space-y-2">
+                        <div class="font-bold text-slate-900 uppercase border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                            <span class="flex items-center space-x-1.5">
+                                <i class="fa-solid fa-building-columns text-sky-600"></i>
+                                <span>Bank Account Summary</span>
+                            </span>
+                            <span class="text-[10px] font-normal text-slate-500">Period Statement</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Period Opening Bank Balance:</span>
+                            <span id="printOpeningBank" class="font-semibold text-slate-800">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-sky-700">
+                            <span>Total Received Bank (+):</span>
+                            <span id="printTotalBankIn" class="font-bold">OMR 0.000</span>
+                        </div>
+                        <div class="flex justify-between text-purple-700">
+                            <span>Total Bank Out Paid (-):</span>
+                            <span id="printTotalBankOut" class="font-bold">OMR 0.000</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-300 flex justify-between items-center font-extrabold text-slate-900 text-sm">
+                            <span>Period Closing Bank Balance:</span>
+                            <span id="printClosingBank" class="text-sky-700">OMR 0.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Combined Period Grand Total Bar -->
+                <div class="bg-slate-900 text-white p-3.5 rounded-lg mb-6 flex items-center justify-between text-xs sm:text-sm font-bold">
+                    <span>Combined Period Closing Balance (Cash + Bank):</span>
+                    <span id="printGrandNet" class="text-base sm:text-lg text-emerald-400 font-extrabold">OMR 0.000</span>
+                </div>
+
+                <!-- Detailed Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 border-y border-slate-300 uppercase font-bold">
+                                <th class="py-2.5 px-3">Date</th>
+                                <th class="py-2.5 px-3">Type</th>
+                                <th class="py-2.5 px-3">Category / Purpose</th>
+                                <th class="py-2.5 px-3 text-right">Amount (<span class="currencySymbol">OMR</span>)</th>
+                                <th class="py-2.5 px-3 text-center no-print">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="divide-y divide-slate-200">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-400">
+                            <tr>
+                                <td colspan="3" class="py-3 px-3 text-right uppercase tracking-wider">Statement Net Period Closing Liquidity:</td>
+                                <td id="printFooterNet" class="py-3 px-3 text-right text-slate-900 font-extrabold text-sm">OMR 0.000</td>
+                                <td class="no-print"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Print Footer / Signatures -->
+                <div class="mt-12 pt-8 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-xs text-slate-500">
+                    <div>
+                        <div class="h-10"></div>
+                        <div class="border-t border-dashed border-slate-400 pt-1 font-semibold text-slate-700">Prepared By (Signature)</div>
+                    </div>
+                    <div>
+                        <div class="h-10"></div>
+                        <div class="border-t border-dashed border-slate-400 pt-1 font-semibold text-slate-700">Authorized Signatory</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 4: SETTINGS PAGE ================= -->
+        <section id="view-settings" class="hidden space-y-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Application Settings</h1>
+                <p class="text-sm text-slate-500">Customize company details, initial opening balances, currency, categories, and backup data</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Company Details Form -->
+                <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="border-b border-slate-100 pb-3 flex items-center space-x-2">
+                        <i class="fa-solid fa-building text-emerald-600"></i>
+                        <h2 class="text-lg font-bold text-slate-900">Company Profile & Base Opening Balances</h2>
+                    </div>
+
+                    <form id="companySettingsForm" onsubmit="handleSaveSettings(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Company Name *</label>
+                            <input type="text" id="settingCompName" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 font-semibold" placeholder="e.g. Acme Trading Co.">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tagline / Subtitle</label>
+                            <input type="text" id="settingCompTagline" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800" placeholder="e.g. Cash & Bank Flow Ledger">
+                        </div>
+
+                        <!-- Initial Base Opening Balances -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-semibold text-emerald-700 uppercase mb-1">Initial Opening Cash Balance (<span class="currencySymbol">OMR</span>)</label>
+                                <input type="number" step="0.001" id="settingCompOpeningCash" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold" placeholder="0.000">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-sky-700 uppercase mb-1">Initial Opening Bank Balance (<span class="currencySymbol">OMR</span>)</label>
+                                <input type="number" step="0.001" id="settingCompOpeningBank" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold" placeholder="0.000">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Phone Number</label>
+                                <input type="text" id="settingCompPhone" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800" placeholder="+968 9123 4567">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
+                                <input type="email" id="settingCompEmail" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800" placeholder="info@company.com">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tax / Registration ID</label>
+                                <input type="text" id="settingCompTax" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800" placeholder="OM-TAX-98231">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Currency Symbol *</label>
+                                <select id="settingCompCurrency" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white font-bold">
+                                    <option value="OMR" selected>OMR (Omani Rial)</option>
+                                    <option value="$">$ (USD - Dollar)</option>
+                                    <option value="€">€ (EUR - Euro)</option>
+                                    <option value="£">£ (GBP - Pound)</option>
+                                    <option value="₹">₹ (INR - Rupee)</option>
+                                    <option value="AED">AED (Emirates Dirham)</option>
+                                    <option value="SAR">SAR (Saudi Riyal)</option>
+                                    <option value="¥">¥ (JPY / CNY)</option>
+                                    <option value="₱">₱ (PHP - Peso)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Company Address</label>
+                            <textarea id="settingCompAddress" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800" placeholder="Building 42, Commercial Avenue, Muscat, Oman"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg shadow transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Save Company Profile & Balances</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Custom Categories & Data Backup (Right Column) -->
+                <div class="lg:col-span-5 space-y-5">
+                    <!-- Custom Category Manager Card -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-tags text-purple-600"></i>
+                                <span>Transaction Categories</span>
+                            </h3>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <input type="text" id="newCategoryInput" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Enter new category..." onkeypress="if(event.key==='Enter'){addNewCategory(); event.preventDefault();}">
+                            <button onclick="addNewCategory()" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-4 py-2 rounded-lg text-xs transition flex items-center space-x-1">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add</span>
+                            </button>
+                        </div>
+
+                        <!-- Active Categories List -->
+                        <div id="categoryListContainer" class="flex flex-wrap gap-2 pt-2 max-h-48 overflow-y-auto">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Backup & Import Data Card -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex items-center space-x-2">
+                            <i class="fa-solid fa-database text-sky-600"></i>
+                            <h3 class="font-bold text-slate-900 text-base">Data Backup & Restore</h3>
+                        </div>
+
+                        <p class="text-xs text-slate-500">Export your ledger data to a JSON backup file or restore from a previously saved file.</p>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="exportDataJSON()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg text-xs transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Export JSON</span>
+                            </button>
+                            <button onclick="triggerImportJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2.5 rounded-lg text-xs border border-slate-300 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-upload"></i>
+                                <span>Import JSON</span>
+                            </button>
+                            <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="handleImportJSON(event)">
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100">
+                            <button onclick="confirmResetAllData()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 rounded-lg text-xs border border-rose-200 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Reset All Ledger Data</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Quick Add Category Modal -->
+    <div id="quickCategoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-folder-plus text-emerald-600"></i>
+                    <span>Quick Add Category</span>
+                </h3>
+                <button onclick="closeQuickAddCategoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category Name *</label>
+                <input type="text" id="quickCategoryInput" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 font-medium" placeholder="e.g. Equipment Purchase" onkeypress="if(event.key==='Enter'){handleQuickAddCategory(); event.preventDefault();}">
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button onclick="closeQuickAddCategoryModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                <button onclick="handleQuickAddCategory()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition shadow">Save Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div class="flex items-center space-x-3 text-rose-600">
+                <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center font-bold text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="confirmTitle" class="text-base font-bold text-slate-900">Confirm Action</h3>
+            </div>
+            
+            <p id="confirmMessage" class="text-xs text-slate-600 leading-relaxed">Are you sure you want to proceed with this action?</p>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button type="button" id="confirmCancelBtn" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                <button type="button" id="confirmOkBtn" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition">Confirm Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage" class="text-sm font-medium">Operation completed successfully</span>
+    </div>
+
+    <script>
+        const DEFAULT_COMPANY = {
+            name: "Cash In Cash Out & Bank In Bank Out",
+            tagline: "Daily Flow Management Ledger",
+            address: "Building 42, Commercial Avenue, Muscat, Oman",
+            phone: "+968 9123 4567",
+            email: "accounts@company.com",
+            taxId: "OM-TAX-98231",
+            currency: "OMR",
+            openingCash: 0,
+            openingBank: 0
+        };
+
+        const DEFAULT_CATEGORIES = [
+            "Client Payment", "Sales Revenue", "Supplier Payment", "Office Rent",
+            "Utility Bills", "Staff Salary", "Bank Deposit", "Petty Cash Transfer",
+            "Miscellaneous Expense", "Tax Payment"
+        ];
+
+        const SAMPLE_TRANSACTIONS = [
+            { id: "tx-1", date: new Date().toISOString().split('T')[0], type: "cash_in", amount: 1250.000, category: "Sales Revenue" },
+            { id: "tx-2", date: new Date().toISOString().split('T')[0], type: "cash_out", amount: 140.000, category: "Petty Cash Transfer" },
+            { id: "tx-3", date: new Date().toISOString().split('T')[0], type: "bank_in", amount: 4500.000, category: "Client Payment" },
+            { id: "tx-4", date: new Date().toISOString().split('T')[0], type: "bank_out", amount: 1800.000, category: "Supplier Payment" }
+        ];
+
+        // Global State Variables
+        let companyData = JSON.parse(localStorage.getItem('cb_company')) || DEFAULT_COMPANY;
+        if (!companyData.currency || companyData.currency === '$') {
+            companyData.currency = 'OMR';
+            localStorage.setItem('cb_company', JSON.stringify(companyData));
+        }
+        if (companyData.openingCash === undefined) companyData.openingCash = 0;
+        if (companyData.openingBank === undefined) companyData.openingBank = 0;
+
+        let categories = JSON.parse(localStorage.getItem('cb_categories')) || DEFAULT_CATEGORIES;
+        let transactions = JSON.parse(localStorage.getItem('cb_transactions')) || SAMPLE_TRANSACTIONS;
+        let reportChartInstance = null;
+        let pendingConfirmAction = null;
+
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDatePicker').value = today;
+            document.getElementById('reportStartDate').value = getFirstDayOfMonth();
+            document.getElementById('reportEndDate').value = today;
+            document.getElementById('reportMonthPicker').value = today.substring(0, 7);
+
+            populateYearDropdown();
+            renderCompanyInfo();
+            renderCategoryOptions();
+            renderCategoryBadges();
+            updateDashboardCards();
+            renderHomeRecentTable();
+            onEntryDateChange();
+            generateReport();
+
+            // Setup custom confirm modal listeners
+            document.getElementById('confirmCancelBtn').onclick = closeConfirmModal;
+        };
+
+        function switchTab(tabName) {
+            const tabs = ['home', 'entry', 'report', 'settings'];
+            tabs.forEach(tab => {
+                const view = document.getElementById(`view-${tab}`);
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                if (tab === tabName) {
+                    if (view) view.classList.remove('hidden');
+                    if (btn) {
+                        btn.classList.add('bg-slate-800', 'text-white');
+                        btn.classList.remove('text-slate-300');
+                    }
+                } else {
+                    if (view) view.classList.add('hidden');
+                    if (btn) {
+                        btn.classList.remove('bg-slate-800', 'text-white');
+                        btn.classList.add('text-slate-300');
+                    }
+                }
+            });
+
+            // Close mobile menu if open
+            const mobileMenu = document.getElementById('mobileMenu');
+            if (mobileMenu) mobileMenu.classList.add('hidden');
+
+            // Refresh view-specific content
+            if (tabName === 'home') {
+                updateDashboardCards();
+                renderHomeRecentTable();
+            } else if (tabName === 'report') {
+                generateReport();
+            } else if (tabName === 'settings') {
+                loadCompanySettingsForm();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function showConfirmModal(title, msg, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = msg;
+            pendingConfirmAction = onConfirm;
+            document.getElementById('confirmOkBtn').onclick = function() {
+                if (pendingConfirmAction) pendingConfirmAction();
+                closeConfirmModal();
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            pendingConfirmAction = null;
+        }
+
+        function renderCompanyInfo() {
+            document.getElementById('navCompanyName').innerText = companyData.name || "My Business";
+
+            document.getElementById('homeCompanyName').innerText = companyData.name || "Company Name";
+            document.getElementById('homeCompanyTagline').innerText = companyData.tagline || "Cash & Bank Ledger";
+            document.getElementById('homeCompanyAddress').innerText = companyData.address || "Address Not Set";
+            document.getElementById('homeCompanyPhone').innerText = companyData.phone || "Phone Not Set";
+            document.getElementById('homeCompanyEmail').innerText = companyData.email || "Email Not Set";
+            document.getElementById('homeCompanyTax').innerText = `Tax/Reg ID: ${companyData.taxId || '--'}`;
+            document.getElementById('homeCompanyCurrency').innerText = companyData.currency || "OMR";
+
+            document.getElementById('printCompName').innerText = companyData.name || "Company Name";
+            document.getElementById('printCompTagline').innerText = companyData.tagline || "";
+            document.getElementById('printCompAddr').innerText = companyData.address || "";
+            document.getElementById('printCompContact').innerText = `Tel: ${companyData.phone || '--'} | Email: ${companyData.email || '--'}`;
+            document.getElementById('printCompTax').innerText = `Tax ID / Reg No: ${companyData.taxId || '--'}`;
+
+            document.querySelectorAll('.currencySymbol').forEach(el => {
+                el.innerText = companyData.currency || "OMR";
+            });
+        }
+
+        function loadCompanySettingsForm() {
+            document.getElementById('settingCompName').value = companyData.name || "";
+            document.getElementById('settingCompTagline').value = companyData.tagline || "";
+            document.getElementById('settingCompOpeningCash').value = companyData.openingCash || 0;
+            document.getElementById('settingCompOpeningBank').value = companyData.openingBank || 0;
+            document.getElementById('settingCompPhone').value = companyData.phone || "";
+            document.getElementById('settingCompEmail').value = companyData.email || "";
+            document.getElementById('settingCompTax').value = companyData.taxId || "";
+            document.getElementById('settingCompCurrency').value = companyData.currency || "OMR";
+            document.getElementById('settingCompAddress').value = companyData.address || "";
+        }
+
+        function handleSaveSettings(e) {
+            e.preventDefault();
+            companyData = {
+                name: document.getElementById('settingCompName').value.trim(),
+                tagline: document.getElementById('settingCompTagline').value.trim(),
+                openingCash: parseFloat(document.getElementById('settingCompOpeningCash').value) || 0,
+                openingBank: parseFloat(document.getElementById('settingCompOpeningBank').value) || 0,
+                phone: document.getElementById('settingCompPhone').value.trim(),
+                email: document.getElementById('settingCompEmail').value.trim(),
+                taxId: document.getElementById('settingCompTax').value.trim(),
+                currency: document.getElementById('settingCompCurrency').value,
+                address: document.getElementById('settingCompAddress').value.trim()
+            };
+
+            localStorage.setItem('cb_company', JSON.stringify(companyData));
+            renderCompanyInfo();
+            updateDashboardCards();
+            onEntryDateChange();
+            generateReport();
+            showToast("Company profile & opening balances saved!");
+        }
+
+        function renderCategoryOptions(selectedCategory = null) {
+            const select = document.getElementById('entryCategory');
+            if (!select) return;
+            const currentVal = selectedCategory || select.value;
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                if (cat === currentVal) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function openQuickAddCategoryModal() {
+            document.getElementById('quickCategoryInput').value = '';
+            document.getElementById('quickCategoryModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('quickCategoryInput').focus(), 100);
+        }
+
+        function closeQuickAddCategoryModal() {
+            document.getElementById('quickCategoryModal').classList.add('hidden');
+        }
+
+        function handleQuickAddCategory() {
+            const input = document.getElementById('quickCategoryInput');
+            const val = input.value.trim();
+            if (!val) {
+                showToast("Please enter a category name", true);
+                return;
+            }
+            if (categories.some(c => c.toLowerCase() === val.toLowerCase())) {
+                showToast("Category already exists", true);
+                return;
+            }
+            categories.push(val);
+            localStorage.setItem('cb_categories', JSON.stringify(categories));
+            renderCategoryOptions(val);
+            renderCategoryBadges();
+            closeQuickAddCategoryModal();
+            showToast(`Category "${val}" added!`);
+        }
+
+        function renderCategoryBadges() {
+            const container = document.getElementById('categoryListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            categories.forEach((cat, index) => {
+                const badge = document.createElement('div');
+                badge.className = 'inline-flex items-center space-x-1.5 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-full text-xs text-slate-700';
+                badge.innerHTML = `
+                    <span>${escapeHtml(cat)}</span>
+                    <button onclick="removeCategory(${index})" class="text-slate-400 hover:text-rose-600 focus:outline-none ml-1">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(badge);
+            });
+        }
+
+        function addNewCategory() {
+            const input = document.getElementById('newCategoryInput');
+            const val = input.value.trim();
+            if (!val) {
+                showToast("Please enter a category name", true);
+                return;
+            }
+            if (categories.some(c => c.toLowerCase() === val.toLowerCase())) {
+                showToast("Category already exists", true);
+                return;
+            }
+            categories.push(val);
+            localStorage.setItem('cb_categories', JSON.stringify(categories));
+            input.value = '';
+            renderCategoryOptions(val);
+            renderCategoryBadges();
+            showToast("New category added");
+        }
+
+        function removeCategory(index) {
+            categories.splice(index, 1);
+            localStorage.setItem('cb_categories', JSON.stringify(categories));
+            renderCategoryOptions();
+            renderCategoryBadges();
+            showToast("Category removed");
+        }
+
+        function updateFormFields() {
+            // Placeholder for type switching
+        }
+
+        function handleSaveEntry(e) {
+            e.preventDefault();
+            const date = document.getElementById('entryDatePicker').value;
+            const type = document.querySelector('input[name="entryType"]:checked').value;
+            const amount = parseFloat(document.getElementById('entryAmount').value) || 0;
+            const category = document.getElementById('entryCategory').value;
+            const editId = document.getElementById('entryId').value;
+
+            if (amount <= 0) {
+                showToast("Please enter a valid amount", true);
+                return;
+            }
+
+            if (editId) {
+                const idx = transactions.findIndex(t => t.id === editId);
+                if (idx !== -1) {
+                    transactions[idx] = { id: editId, date, type, amount, category };
+                    showToast("Transaction updated successfully!");
+                }
+            } else {
+                const newTx = {
+                    id: 'tx-' + Date.now(),
+                    date,
+                    type,
+                    amount,
+                    category
+                };
+                transactions.unshift(newTx);
+                showToast("Transaction recorded successfully!");
+            }
+
+            localStorage.setItem('cb_transactions', JSON.stringify(transactions));
+            resetEntryForm();
+            onEntryDateChange();
+            updateDashboardCards();
+            renderHomeRecentTable();
+        }
+
+        function resetEntryForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('entryId').value = '';
+            document.getElementById('editingBadge').classList.add('hidden');
+            document.getElementById('formTitle').innerText = "New Ledger Transaction";
+            document.getElementById('btnSaveText').innerText = "Save Transaction";
+            document.querySelector('input[name="entryType"][value="cash_in"]').checked = true;
+        }
+
+        function editEntry(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            document.getElementById('entryId').value = tx.id;
+            document.getElementById('entryDatePicker').value = tx.date;
+            document.querySelector(`input[name="entryType"][value="${tx.type}"]`).checked = true;
+            document.getElementById('entryAmount').value = tx.amount;
+            document.getElementById('entryCategory').value = tx.category;
+
+            document.getElementById('editingBadge').classList.remove('hidden');
+            document.getElementById('formTitle').innerText = "Edit Ledger Transaction";
+            document.getElementById('btnSaveText').innerText = "Update Transaction";
+
+            switchTab('entry');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteEntry(id) {
+            showConfirmModal(
+                "Delete Transaction Entry?",
+                "Are you sure you want to permanently delete this entry?",
+                function() {
+                    transactions = transactions.filter(t => t.id !== id);
+                    localStorage.setItem('cb_transactions', JSON.stringify(transactions));
+                    onEntryDateChange();
+                    updateDashboardCards();
+                    renderHomeRecentTable();
+                    generateReport();
+                    showToast("Entry deleted successfully");
+                }
+            );
+        }
+
+        function onEntryDateChange() {
+            const selectedDate = document.getElementById('entryDatePicker').value;
+            document.getElementById('dailySummaryDateDisplay').innerText = selectedDate;
+
+            let priorCashIn = 0, priorCashOut = 0, priorBankIn = 0, priorBankOut = 0;
+            let dayCashIn = 0, dayCashOut = 0, dayBankIn = 0, dayBankOut = 0;
+
+            transactions.forEach(t => {
+                if (t.date < selectedDate) {
+                    if (t.type === 'cash_in') priorCashIn += t.amount;
+                    if (t.type === 'cash_out') priorCashOut += t.amount;
+                    if (t.type === 'bank_in') priorBankIn += t.amount;
+                    if (t.type === 'bank_out') priorBankOut += t.amount;
+                } else if (t.date === selectedDate) {
+                    if (t.type === 'cash_in') dayCashIn += t.amount;
+                    if (t.type === 'cash_out') dayCashOut += t.amount;
+                    if (t.type === 'bank_in') dayBankIn += t.amount;
+                    if (t.type === 'bank_out') dayBankOut += t.amount;
+                }
+            });
+
+            const dayOpeningCash = (companyData.openingCash || 0) + priorCashIn - priorCashOut;
+            const dayOpeningBank = (companyData.openingBank || 0) + priorBankIn - priorBankOut;
+
+            const dayClosingCash = dayOpeningCash + dayCashIn - dayCashOut;
+            const dayClosingBank = dayOpeningBank + dayBankIn - dayBankOut;
+
+            document.getElementById('dayCashIn').innerText = formatMoney(dayCashIn);
+            document.getElementById('dayCashOut').innerText = formatMoney(dayCashOut);
+            document.getElementById('dayBankIn').innerText = formatMoney(dayBankIn);
+            document.getElementById('dayBankOut').innerText = formatMoney(dayBankOut);
+
+            document.getElementById('dayOpeningCash').innerText = formatMoney(dayOpeningCash);
+            document.getElementById('dayClosingCash').innerText = formatMoney(dayClosingCash);
+            document.getElementById('dayOpeningBank').innerText = formatMoney(dayOpeningBank);
+            document.getElementById('dayClosingBank').innerText = formatMoney(dayClosingBank);
+
+            const dayList = transactions.filter(t => t.date === selectedDate);
+            const container = document.getElementById('dayEntriesList');
+            document.getElementById('dayEntryCount').innerText = `${dayList.length} items`;
+
+            if (dayList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-receipt text-3xl mb-2 text-slate-300"></i>
+                        <p>No entries recorded for ${selectedDate}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = dayList.map(t => `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center space-x-2">
+                        ${getTypeBadgeHTML(t.type)}
+                        <span class="font-bold text-slate-800">${escapeHtml(t.category)}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-extrabold text-sm text-slate-900">${formatMoney(t.amount)}</span>
+                        <div class="flex items-center space-x-1.5 border-l border-slate-200 pl-2">
+                            <button onclick="editEntry('${t.id}')" title="Edit" class="p-1 text-blue-600 hover:text-blue-800 focus:outline-none"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteEntry('${t.id}')" title="Delete" class="p-1 text-rose-600 hover:text-rose-800 focus:outline-none"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateDashboardCards() {
+            let totalCashIn = 0, totalCashOut = 0, totalBankIn = 0, totalBankOut = 0;
+
+            transactions.forEach(t => {
+                if (t.type === 'cash_in') totalCashIn += t.amount;
+                if (t.type === 'cash_out') totalCashOut += t.amount;
+                if (t.type === 'bank_in') totalBankIn += t.amount;
+                if (t.type === 'bank_out') totalBankOut += t.amount;
+            });
+
+            const openingCash = companyData.openingCash || 0;
+            const openingBank = companyData.openingBank || 0;
+
+            const netCashClosing = openingCash + totalCashIn - totalCashOut;
+            const netBankClosing = openingBank + totalBankIn - totalBankOut;
+            const grandClosing = netCashClosing + netBankClosing;
+
+            document.getElementById('cardOpeningCash').innerText = formatMoney(openingCash);
+            document.getElementById('cardCashIn').innerText = formatMoney(totalCashIn);
+            document.getElementById('cardCashOut').innerText = formatMoney(totalCashOut);
+            document.getElementById('cardNetCash').innerText = formatMoney(netCashClosing);
+            document.getElementById('cardCashInMain').innerText = formatMoney(totalCashIn);
+
+            document.getElementById('cardOpeningBank').innerText = formatMoney(openingBank);
+            document.getElementById('cardBankIn').innerText = formatMoney(totalBankIn);
+            document.getElementById('cardBankOut').innerText = formatMoney(totalBankOut);
+            document.getElementById('cardNetBank').innerText = formatMoney(netBankClosing);
+            document.getElementById('cardBankInMain').innerText = formatMoney(totalBankIn);
+
+            document.getElementById('cardGrandClosing').innerText = formatMoney(grandClosing);
+        }
+
+        function renderHomeRecentTable() {
+            const body = document.getElementById('homeRecentTableBody');
+            const recent = transactions.slice(0, 5);
+
+            if (recent.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">No transactions recorded yet.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = recent.map(t => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition text-xs">
+                    <td class="px-4 py-3 font-mono text-slate-600">${t.date}</td>
+                    <td class="px-4 py-3">${getTypeBadgeHTML(t.type)}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">${escapeHtml(t.category)}</td>
+                    <td class="px-4 py-3 text-right font-bold text-slate-900">${formatMoney(t.amount)}</td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="editEntry('${t.id}')" class="text-blue-600 hover:text-blue-800 text-xs px-1.5 py-1 rounded bg-blue-50 hover:bg-blue-100 transition"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
+                            <button onclick="deleteEntry('${t.id}')" class="text-rose-600 hover:text-rose-800 text-xs px-1.5 py-1 rounded bg-rose-50 hover:bg-rose-100 transition"><i class="fa-solid fa-trash-can mr-1"></i>Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function onReportModeChange() {
+            const mode = document.getElementById('reportMode').value;
+            document.getElementById('filterContainerDate').classList.toggle('hidden', mode !== 'date');
+            document.getElementById('filterContainerMonth').classList.toggle('hidden', mode !== 'month');
+            document.getElementById('filterContainerYear').classList.toggle('hidden', mode !== 'year');
+            generateReport();
+        }
+
+        function generateReport() {
+            const mode = document.getElementById('reportMode').value;
+            const typeFilter = document.getElementById('reportTypeFilter').value;
+
+            let reportPeriodText = "";
+            let reportTitleText = "";
+            let startDate = "";
+            let endDate = "";
+
+            if (mode === 'date') {
+                startDate = document.getElementById('reportStartDate').value;
+                endDate = document.getElementById('reportEndDate').value;
+                reportTitleText = "Date-Wise Financial Statement";
+                reportPeriodText = `Period: ${startDate || 'Beginning'} to ${endDate || 'Present'}`;
+            } else if (mode === 'month') {
+                const monthVal = document.getElementById('reportMonthPicker').value;
+                reportTitleText = "Month-Wise Financial Report";
+                reportPeriodText = `Month: ${monthVal || 'All Months'}`;
+                if (monthVal) {
+                    startDate = `${monthVal}-01`;
+                    endDate = `${monthVal}-31`;
+                }
+            } else if (mode === 'year') {
+                const yearVal = document.getElementById('reportYearPicker').value;
+                reportTitleText = "Year-Wise Financial Report";
+                reportPeriodText = `Year: ${yearVal}`;
+                if (yearVal) {
+                    startDate = `${yearVal}-01-01`;
+                    endDate = `${yearVal}-12-31`;
+                }
+            }
+
+            // Calculate Period Opening Balances
+            let priorCashIn = 0, priorCashOut = 0, priorBankIn = 0, priorBankOut = 0;
+
+            transactions.forEach(t => {
+                if (startDate && t.date < startDate) {
+                    if (t.type === 'cash_in') priorCashIn += t.amount;
+                    if (t.type === 'cash_out') priorCashOut += t.amount;
+                    if (t.type === 'bank_in') priorBankIn += t.amount;
+                    if (t.type === 'bank_out') priorBankOut += t.amount;
+                }
+            });
+
+            const openingCash = (companyData.openingCash || 0) + priorCashIn - priorCashOut;
+            const openingBank = (companyData.openingBank || 0) + priorBankIn - priorBankOut;
+
+            // Filter transactions within period
+            let periodList = [...transactions];
+            if (startDate) periodList = periodList.filter(t => t.date >= startDate);
+            if (endDate) periodList = periodList.filter(t => t.date <= endDate);
+            if (typeFilter !== 'all') periodList = periodList.filter(t => t.type === typeFilter);
+
+            periodList.sort((a, b) => a.date.localeCompare(b.date));
+
+            // Compute period totals
+            let totalCashIn = 0, totalCashOut = 0, totalBankIn = 0, totalBankOut = 0;
+            periodList.forEach(t => {
+                if (t.type === 'cash_in') totalCashIn += t.amount;
+                if (t.type === 'cash_out') totalCashOut += t.amount;
+                if (t.type === 'bank_in') totalBankIn += t.amount;
+                if (t.type === 'bank_out') totalBankOut += t.amount;
+            });
+
+            // Compute Closing Balances
+            const closingCash = openingCash + totalCashIn - totalCashOut;
+            const closingBank = openingBank + totalBankIn - totalBankOut;
+            const grandClosing = closingCash + closingBank;
+
+            // Update Printable Statement Headers
+            document.getElementById('printReportTitle').innerText = reportTitleText;
+            document.getElementById('printReportPeriod').innerText = reportPeriodText;
+            document.getElementById('printGeneratedDate').innerText = `Generated on: ${new Date().toLocaleDateString()}`;
+
+            document.getElementById('printOpeningCash').innerText = formatMoney(openingCash);
+            document.getElementById('printTotalCashIn').innerText = formatMoney(totalCashIn);
+            document.getElementById('printTotalCashOut').innerText = formatMoney(totalCashOut);
+            document.getElementById('printClosingCash').innerText = formatMoney(closingCash);
+
+            document.getElementById('printOpeningBank').innerText = formatMoney(openingBank);
+            document.getElementById('printTotalBankIn').innerText = formatMoney(totalBankIn);
+            document.getElementById('printTotalBankOut').innerText = formatMoney(totalBankOut);
+            document.getElementById('printClosingBank').innerText = formatMoney(closingBank);
+
+            document.getElementById('printGrandNet').innerText = formatMoney(grandClosing);
+            document.getElementById('printFooterNet').innerText = formatMoney(grandClosing);
+
+            const body = document.getElementById('reportTableBody');
+            if (periodList.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">No transactions found for the selected filter criteria.</td></tr>`;
+            } else {
+                body.innerHTML = periodList.map(t => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-2.5 px-3 font-mono text-slate-700">${t.date}</td>
+                        <td class="py-2.5 px-3">${getTypeBadgeHTML(t.type)}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-800">${escapeHtml(t.category)}</td>
+                        <td class="py-2.5 px-3 text-right font-bold text-slate-900">${formatMoney(t.amount)}</td>
+                        <td class="py-2.5 px-3 text-center no-print">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="editEntry('${t.id}')" class="text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteEntry('${t.id}')" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            updateReportChart(totalCashIn, totalCashOut, totalBankIn, totalBankOut);
+        }
+
+        function updateReportChart(cashIn, cashOut, bankIn, bankOut) {
+            const ctx = document.getElementById('reportChart').getContext('2d');
+            if (reportChartInstance) reportChartInstance.destroy();
+
+            reportChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Cash In', 'Cash Out', 'Received Bank', 'Bank Out'],
+                    datasets: [{
+                        label: 'Amount (' + (companyData.currency || 'OMR') + ')',
+                        data: [cashIn, cashOut, bankIn, bankOut],
+                        backgroundColor: ['#10B981', '#EF4444', '#0EA5E9', '#8B5CF6'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function triggerA4Print() {
+            window.print();
+        }
+
+        function exportDataJSON() {
+            const data = {
+                company: companyData,
+                categories: categories,
+                transactions: transactions,
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CashLedger_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            showToast("Backup exported successfully");
+        }
+
+        function triggerImportJSON() {
+            document.getElementById('importJsonInput').click();
+        }
+
+        function handleImportJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (imported.company) companyData = imported.company;
+                    if (imported.categories) categories = imported.categories;
+                    if (imported.transactions) transactions = imported.transactions;
+
+                    localStorage.setItem('cb_company', JSON.stringify(companyData));
+                    localStorage.setItem('cb_categories', JSON.stringify(categories));
+                    localStorage.setItem('cb_transactions', JSON.stringify(transactions));
+
+                    renderCompanyInfo();
+                    renderCategoryOptions();
+                    renderCategoryBadges();
+                    updateDashboardCards();
+                    onEntryDateChange();
+                    generateReport();
+                    showToast("Data imported successfully!");
+                } catch (err) {
+                    showToast("Invalid JSON backup file", true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetAllData() {
+            showConfirmModal(
+                "Reset All Ledger Data?",
+                "Warning: This will clear all recorded transactions, categories, and company preferences. Do you wish to continue?",
+                function() {
+                    localStorage.clear();
+                    companyData = DEFAULT_COMPANY;
+                    categories = DEFAULT_CATEGORIES;
+                    transactions = SAMPLE_TRANSACTIONS;
+                    renderCompanyInfo();
+                    renderCategoryOptions();
+                    renderCategoryBadges();
+                    updateDashboardCards();
+                    onEntryDateChange();
+                    generateReport();
+                    showToast("Application reset to default state");
+                }
+            );
+        }
+
+        function formatNum(num) {
+            return (num || 0).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        }
+
+        function formatMoney(num) {
+            const curr = companyData.currency || "OMR";
+            const space = curr.length > 1 ? " " : "";
+            return `${curr}${space}${formatNum(num)}`;
+        }
+
+        function getFirstDayOfMonth() {
+            const date = new Date();
+            return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+        }
+
+        function populateYearDropdown() {
+            const select = document.getElementById('reportYearPicker');
+            select.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= currentYear - 5; y--) {
+                const opt = document.createElement('option');
+                opt.value = y.toString();
+                opt.textContent = y.toString();
+                select.appendChild(opt);
+            }
+        }
+
+        function getTypeBadgeHTML(type) {
+            switch (type) {
+                case 'cash_in':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-arrow-down mr-1"></i>Cash In</span>`;
+                case 'cash_out':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800"><i class="fa-solid fa-arrow-up mr-1"></i>Cash Out</span>`;
+                case 'bank_in':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800"><i class="fa-solid fa-building-columns mr-1"></i>Received Bank</span>`;
+                case 'bank_out':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800"><i class="fa-solid fa-money-bill-transfer mr-1"></i>Bank Out</span>`;
+                default:
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">${type}</span>`;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const message = document.getElementById('toastMessage');
+
+            message.innerText = msg;
+            if (isError) {
+                icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            } else {
+                icon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
